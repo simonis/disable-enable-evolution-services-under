@@ -7,6 +7,8 @@
 ##
 ## This must be run as root.
 ##
+## (vhs) Do not disable the 'UserPrompter.service' (see:
+##       https://askubuntu.com/questions/315640/how-do-i-completely-remove-evolution#comment1851708_694515)
 
 myname=$(basename "$0")
 
@@ -60,15 +62,17 @@ disable-services()
 {
     mkdir -p "$DISABLED_DIR"
 
-    find_evolution_services | while IFS= read -r -d $'\0' servicename
+    local servicename servicefile
+    for servicename in AddressBook Calendar Sources
     do
+        local servicefile=org.gnome.evolution.dataserver."$servicename".service
         # Tell dpkg/apt to update the file in DISABLED_DIR instead
         # of the one in SERVICES_HOME
-        dpkg-divert --quiet --divert "$DISABLED_DIR/$servicename" --rename --add "$SERVICES_HOME/$servicename" \
-            || die -3 "Unable to divert service $servicename."
+        dpkg-divert --quiet --divert "$DISABLED_DIR/$servicefile" --rename --add "$SERVICES_HOME/$servicefile" \
+            || die -3 "Unable to divert service $servicefile."
 
-        ln -snf /dev/null  "$SERVICES_HOME/$servicename"
-        echo "Disabled service $servicename"
+        ln -snf /dev/null  "$SERVICES_HOME/$servicefile"
+        echo "Disabled service $servicefile"
     done
 
     echo "All evolution services have been disabled."
@@ -78,7 +82,7 @@ disable-services()
 enable-services()
 {
     local servicename servicefile
-    for servicename in AddressBook Calendar Sources UserPrompter
+    for servicename in AddressBook Calendar Sources
     do
         local servicefile=org.gnome.evolution.dataserver."$servicename".service
         rm "$SERVICES_HOME/$servicefile"
